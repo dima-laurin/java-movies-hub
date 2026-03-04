@@ -74,6 +74,7 @@ public class MoviesHandler extends BaseHttpHandler {
                 break;
         }
     }
+
     private void handleGetAll(HttpExchange ex) throws IOException {
         Collection<Movie> movies = store.findAll();
         String json = gson.toJson(movies);

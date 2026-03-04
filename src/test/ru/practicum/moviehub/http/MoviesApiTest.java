@@ -188,6 +188,7 @@ public class MoviesApiTest {
 
         assertEquals(415, resp.statusCode());
     }
+
     @Test
     void getMovieById_ReturnsMovie() throws Exception {
 
