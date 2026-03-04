@@ -307,7 +307,7 @@ public class MoviesApiTest {
 
         assertEquals(400, resp.statusCode());
         assertTrue(
-                resp.body().contains("Некорректный параметр запроса — 'year'"));
+                resp.body().contains("Некорректный параметр запроса"));
     }
 
     @Test
