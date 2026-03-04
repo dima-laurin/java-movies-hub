@@ -216,7 +216,7 @@ public class MoviesApiTest {
     @Test
     void getMovieById_whenNotFound_returns404() throws Exception {
         HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"+ "/100"))
+                .uri(URI.create(BASE + "/movies" + "/100"))
                 .GET()
                 .build();
 
@@ -234,7 +234,7 @@ public class MoviesApiTest {
         store.add(new Movie(1, "Terminator", 1984));
 
         HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"+ "/1"))
+                .uri(URI.create(BASE + "/movies" + "/1"))
                 .DELETE()
                 .build();
 
@@ -264,7 +264,7 @@ public class MoviesApiTest {
     @Test
     void deleteMovieById_whenNotFound_returns404() throws Exception {
         HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"+ "/2"))
+                .uri(URI.create(BASE + "/movies" + "/2"))
                 .DELETE()
                 .build();
 
@@ -282,7 +282,7 @@ public class MoviesApiTest {
         store.add(new Movie(2, "The Lord of the Rings", 2001));
 
         HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"+ "?year=2025"))
+                .uri(URI.create(BASE + "/movies" + "?year=2025"))
                 .GET()
                 .build();
 

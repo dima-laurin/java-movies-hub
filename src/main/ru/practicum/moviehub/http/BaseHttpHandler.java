@@ -25,6 +25,7 @@ public abstract class BaseHttpHandler implements HttpHandler {
         ex.getResponseHeaders().set("Content-Type", CT_JSON);
         ex.sendResponseHeaders(204, -1);
     }
+
     protected void sendError(HttpExchange ex, int status, String message) throws IOException {
         sendJson(ex, status, gson.toJson(new ErrorResponse(message)));
     }
