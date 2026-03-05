@@ -1,6 +1,5 @@
 package ru.practicum.moviehub.http;
 
-import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import ru.practicum.moviehub.api.ErrorResponse;
 import ru.practicum.moviehub.model.Movie;
@@ -158,7 +157,6 @@ public class MoviesHandler extends BaseHttpHandler {
         store.remove(movie.getId());
         sendNoContent(ex);
     }
-
 
     private ArrayList<String> validateMovie(Movie movie) {
         ArrayList<String> validationErrors = new ArrayList<>();
