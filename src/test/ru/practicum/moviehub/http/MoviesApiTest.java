@@ -48,15 +48,63 @@ public class MoviesApiTest {
         }
     }
 
-    @Test
-    void getMovies_whenEmpty_returnsEmptyArray() throws Exception {
+    // Вспомогательные методы
+
+    private static HttpResponse<String> getMovies() throws Exception {
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies"))
                 .GET()
                 .build();
 
-        HttpResponse<String> resp =
-                client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        return client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+    }
+
+    private static HttpResponse<String> getMovie(String id) throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/" + id))
+                .GET()
+                .build();
+
+        return client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+    }
+
+    private static HttpResponse<String> getMoviesByYear(String year) throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies?year=" + year))
+                .GET()
+                .build();
+
+        return client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+    }
+
+    private static HttpResponse<String> postMovie(String body, String contentType) throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8));
+
+        if (contentType != null) {
+            builder.header("Content-Type", contentType);
+        }
+
+        HttpRequest req = builder.build();
+
+        return client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+    }
+
+    private static HttpResponse<String> deleteMovie(String id) throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/" + id))
+                .DELETE()
+                .build();
+
+        return client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+    }
+
+    // Тесты
+
+    @Test
+    void getMovies_whenEmpty_returnsEmptyArray() throws Exception {
+        HttpResponse<String> resp = getMovies();
 
         assertEquals(200, resp.statusCode(), "GET /movies должен вернуть 200");
 
@@ -72,17 +120,10 @@ public class MoviesApiTest {
 
     @Test
     void getMovies_whenNotEmpty_returnsMoviesList() throws Exception {
-
         store.add(new Movie(1, "Terminator", 1984));
         store.add(new Movie(2, "The Lord of the Rings", 2001));
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp =
-                client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> resp = getMovies();
 
         assertEquals(200, resp.statusCode());
 
@@ -93,19 +134,9 @@ public class MoviesApiTest {
 
     @Test
     void postMovie_withCorrectData_addsMovie() throws Exception {
-
         String body = "{ \"title\": \"Terminator\", \"year\": 1984 }";
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                .build();
-
-        HttpResponse<String> resp = client.send(
-                request,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
-        );
+        HttpResponse<String> resp = postMovie(body, "application/json");
 
         assertEquals(201, resp.statusCode());
     }
@@ -114,16 +145,7 @@ public class MoviesApiTest {
     void postMovie_withEmptyTitle_returns422() throws Exception {
         String body = "{ \"title\": \"\", \"year\": 1984 }";
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                .build();
-
-        HttpResponse<String> resp = client.send(
-                request,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
-        );
+        HttpResponse<String> resp = postMovie(body, "application/json");
 
         assertEquals(422, resp.statusCode());
         assertTrue(resp.body().contains("Отсутствует название"));
@@ -132,19 +154,9 @@ public class MoviesApiTest {
     @Test
     void postMovie_LongTitle_returns422() throws Exception {
         String titleL = "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii";
-
         String body = "{ \"title\": \"" + titleL + "\", \"year\": 1984 }";
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                .build();
-
-        HttpResponse<String> resp = client.send(
-                request,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
-        );
+        HttpResponse<String> resp = postMovie(body, "application/json");
 
         assertEquals(422, resp.statusCode());
         assertTrue(resp.body().contains("Название не должно превышать 100 символов"));
@@ -154,16 +166,7 @@ public class MoviesApiTest {
     void postMovie_NotCorrectYear_returns422() throws Exception {
         String body = "{ \"title\": \"Terminator\", \"year\": 1489 }";
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                .build();
-
-        HttpResponse<String> resp = client.send(
-                request,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
-        );
+        HttpResponse<String> resp = postMovie(body, "application/json");
 
         assertEquals(422, resp.statusCode());
         assertTrue(resp.body().contains(
@@ -175,32 +178,16 @@ public class MoviesApiTest {
     void postMovie_NotCorrectContentType_returns415() throws Exception {
         String body = "{ \"title\": \"Terminator\", \"year\": 1984 }";
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "text/html")
-                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                .build();
-
-        HttpResponse<String> resp = client.send(
-                request,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
-        );
+        HttpResponse<String> resp = postMovie(body, "text/html");
 
         assertEquals(415, resp.statusCode());
     }
 
     @Test
     void getMovieById_ReturnsMovie() throws Exception {
-
         store.add(new Movie(1, "Terminator", 1984));
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies" + "/1"))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp =
-                client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> resp = getMovie("1");
 
         assertEquals(200, resp.statusCode());
 
@@ -215,64 +202,35 @@ public class MoviesApiTest {
 
     @Test
     void getMovieById_whenNotFound_returns404() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies" + "/100"))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp =
-                client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> resp = getMovie("100");
 
         assertEquals(404, resp.statusCode());
-
         assertTrue(resp.body().contains("Фильм не найден"));
     }
 
     @Test
     void deleteMovieById_DeletesMovie() throws Exception {
-
         store.add(new Movie(1, "Terminator", 1984));
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies" + "/1"))
-                .DELETE()
-                .build();
-
-        HttpResponse<String> resp =
-                client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> resp = deleteMovie("1");
 
         assertEquals(204, resp.statusCode());
-
         assertTrue(store.isEmpty());
     }
 
     @Test
     void deleteMovieById_whenIdIsNotNumber_returns400() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies" + "/q"))
-                .DELETE()
-                .build();
-
-        HttpResponse<String> resp =
-                client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> resp = deleteMovie("q");
 
         assertEquals(400, resp.statusCode());
-
         assertTrue(resp.body().contains("Некорректный ID"));
     }
 
     @Test
     void deleteMovieById_whenNotFound_returns404() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies" + "/2"))
-                .DELETE()
-                .build();
-
-        HttpResponse<String> resp =
-                client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> resp = deleteMovie("2");
 
         assertEquals(404, resp.statusCode());
-
         assertTrue(resp.body().contains("Фильм не найден"));
     }
 
@@ -281,13 +239,7 @@ public class MoviesApiTest {
         store.add(new Movie(1, "Terminator", 1984));
         store.add(new Movie(2, "The Lord of the Rings", 2001));
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies" + "?year=2025"))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp =
-                client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> resp = getMoviesByYear("2025");
 
         assertEquals(200, resp.statusCode());
 
@@ -297,33 +249,19 @@ public class MoviesApiTest {
 
     @Test
     void getMoviesByYear_whenYearIsNotNumber_returns400() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies" + "?year=q"))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp =
-                client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> resp = getMoviesByYear("q");
 
         assertEquals(400, resp.statusCode());
-        assertTrue(
-                resp.body().contains("Некорректный параметр запроса"));
+        assertTrue(resp.body().contains("Некорректный параметр запроса"));
     }
 
     @Test
     void getMoviesByYear_whenMoviesExist_returnsFilteredList() throws Exception {
-
         store.add(new Movie(1, "Blade Runner", 1984));
         store.add(new Movie(2, "Terminator", 1984));
         store.add(new Movie(3, "The Lord of the Rings", 2001));
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies" + "?year=1984"))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp =
-                client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> resp = getMoviesByYear("1984");
 
         assertEquals(200, resp.statusCode());
 
@@ -335,7 +273,7 @@ public class MoviesApiTest {
                 resp.body(),
                 new ListOfMoviesTypeToken().getType()
         );
-        System.out.println(resp.body());
+
         assertEquals(2, movies.size());
 
         for (Movie movie : movies) {

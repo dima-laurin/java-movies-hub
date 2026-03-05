@@ -16,8 +16,10 @@ import java.util.List;
 
 public class MoviesHandler extends BaseHttpHandler {
 
+    private static final int MAX_TITLE_LENGTH = 100;
+    private static final int MIN_MOVIE_YEAR = 1888;
+
     private final MoviesStore store;
-    private final Gson gson = new Gson();
 
     public MoviesHandler(MoviesStore store) {
         this.store = store;
@@ -163,11 +165,11 @@ public class MoviesHandler extends BaseHttpHandler {
         if (movie.getTitle() == null || movie.getTitle().isBlank()) {
             validationErrors.add("Отсутствует название");
         }
-        if (movie.getTitle().length() > 100) {
+        if (movie.getTitle().length() > MAX_TITLE_LENGTH) {
             validationErrors.add("Название не должно превышать 100 символов");
         }
         int currentYear = Year.now().getValue();
-        if (movie.getYear() < 1888 || movie.getYear() > currentYear + 1) {
+        if (movie.getYear() < MIN_MOVIE_YEAR || movie.getYear() > currentYear + 1) {
             validationErrors.add("Год должен быть между 1888 и " + (currentYear + 1));
         }
         return validationErrors;
